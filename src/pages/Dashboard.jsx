@@ -20,6 +20,7 @@ const Dashboard = () => {
   }, []);
   // -----------------------
 
+  
   // ... aquí sigue el resto de tu código (const { data: services } = ...)  const { data: services } = useSupabase('services');
   const { data: employees } = useSupabase('employees');
   const { data: customers } = useSupabase('customers');
