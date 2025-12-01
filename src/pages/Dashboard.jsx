@@ -97,14 +97,14 @@ const Dashboard = () => {
   const getServiceName = (id) => services.find(s => s.id === id)?.name || 'Servicio Desconocido';
   const getEmployeeName = (id) => employees.find(e => e.id === id)?.name || 'Sin Asignar';
 
-  const getPaymentMethodLabel = (method) => {
+ const getPaymentMethodLabel = (method) => {
     switch (method) {
-      case 'cash': return 'Efectivo';
-      case 'card': return 'Tarjeta';
-      case 'transfer': return 'Transferencia';
-      default: return method;
+        case 'cash': return 'Efectivo';
+        case 'card': return 'Tarjeta';
+        case 'transfer': return 'AthMóvil'; // <--- CAMBIO AQUÍ
+        default: return method;
     }
-  };
+};
 
   return (
     <div>
