@@ -1,6 +1,5 @@
-import { supabase } from '../supabase';import React, { useState, useEffect } from 'react'; // <--- Agrega useEffect
-import { supabase } from '../supabase'; // <--- Agrega esta línea
-// ... otras importaciones ...import { useEffect } from 'react'; // Asegúrate de tener useEffect también React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabase';
 import { Plus, Car, Trash2 } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 
