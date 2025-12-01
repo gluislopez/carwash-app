@@ -167,7 +167,17 @@ const Dashboard = () => {
                       <option key={c.id} value={c.id}>{c.name} - {c.vehicle_plate}</option>
                     ))}
                   </select>
-                </div>
+                  {/* Selector de Hora */}
+<div style={{ marginBottom: '1rem' }}>
+    <label className="label">Hora del Servicio</label>
+    <input
+        type="time"
+        className="input"
+        required
+        value={formData.serviceTime}
+        onChange={(e) => setFormData({ ...formData, serviceTime: e.target.value })}
+    />
+</div>                </div>
                 
                 <div style={{ marginBottom: '1rem' }}>
                   <label className="label">Empleado</label>
