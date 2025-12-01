@@ -72,17 +72,22 @@ const Dashboard = () => {
     const tip = parseFloat(formData.tipAmount) || 0;
     const totalPrice = basePrice + extrasTotal + tip;
 
+        // Crear fecha combinando el día de hoy con la hora seleccionada
+    const transactionDate = new Date();
+    const [hours, minutes] = formData.serviceTime.split(':');
+    transactionDate.setHours(hours, minutes, 0, 0);
+
     const newTransaction = {
-      date: new Date().toISOString(),
-      customer_id: formData.customerId,
-      service_id: formData.serviceId,
-      employee_id: formData.employeeId,
-      price: basePrice,
-      commission_amount: parseFloat(formData.commissionAmount),
-      tip_amount: tip,
-      payment_method: formData.paymentMethod,
-      extras: formData.extras,
-      total_price: totalPrice
+        date: transactionDate.toISOString(), // <--- USAMOS LA NUEVA FECHA
+        customer_id: formData.customerId,
+        service_id: formData.serviceId,
+        employee_id: formData.employeeId,
+        price: basePrice,
+        commission_amount: parseFloat(formData.commissionAmount),
+        tip_amount: tip,
+        payment_method: formData.paymentMethod,
+        extras: formData.extras,
+        total_price: totalPrice
     };
     
     try {
