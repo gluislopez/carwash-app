@@ -1,30 +1,34 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, UserCheck, UserX } from 'lucide-react';
+import { Plus, Trash2, User, Phone, Mail, Shield } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 
 const Employees = () => {
-  const { data: employees, loading, create, update, remove } = useSupabase('employees');
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentEmployee, setCurrentEmployee] = useState(null);
-
+  const { data: employees, create, remove } = useSupabase('employees');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
-    active: true
+    position: 'Lavador',
+    phone: '',
+    email: '',
+    user_id: '' // Aquí pegaremos el ID de Supabase
   });
 
-  const handleAddNew = () => {
-    setFormData({ name: '', active: true });
-    setCurrentEmployee(null);
-    setIsEditing(true);
-  };
-
-  const handleEdit = (employee) => {
-    setFormData({
-      name: employee.name,
-      active: employee.active
-    });
-    setCurrentEmployee(employee);
-    setIsEditing(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // Si el campo user_id está vacío, lo mandamos como null para evitar errores
+      const dataToSave = {
+        ...formData,
+        user_id: formData.user_id.trim() === '' ? null : formData.user_id
+      };
+      
+      await create(dataToSave);
+      setIsModalOpen(false);
+      setFormData({ name: '', position: 'Lavador', phone: '', email: '', user_id: '' });
+    } catch (error) {
+      alert('Error al crear empleado: ' + error.message);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -33,120 +37,149 @@ const Employees = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (currentEmployee) {
-        await update(currentEmployee.id, formData);
-      } else {
-        await create(formData);
-      }
-      setIsEditing(false);
-    } catch (error) {
-      alert('Error al guardar: ' + error.message);
-    }
-  };
-
-  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Cargando empleados...</div>;
-
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
           <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Empleados</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Gestiona tu equipo de trabajo.</p>
+          <p style={{ color: 'var(--text-muted)' }}>Gestiona tu equipo de trabajo</p>
         </div>
-        <button className="btn btn-primary" onClick={handleAddNew}>
+        <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
           <Plus size={20} />
           Nuevo Empleado
         </button>
       </div>
 
-      {isEditing && (
-        <div className="card" style={{ marginBottom: '2rem', maxWidth: '600px' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>{currentEmployee ? 'Editar Empleado' : 'Nuevo Empleado'}</h3>
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '1rem' }}>
-              <label className="label">Nombre Completo</label>
-              <input
-                type="text"
-                className="input"
-                required
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Ej. Juan Pérez"
-              />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+        {employees.map((employee) => (
+          <div key={employee.id} className="card" style={{ position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ 
+                width: '50px', height: '50px', borderRadius: '50%', 
+                backgroundColor: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <User size={24} />
+              </div>
+              <div>
+                <h3 style={{ fontWeight: 'bold' }}>{employee.name}</h3>
+                <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)', backgroundColor: 'rgba(255,255,255,0.05)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                  {employee.position}
+                </span>
+              </div>
             </div>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+              {employee.phone && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Phone size={16} /> {employee.phone}
+                </div>
+              )}
+              {employee.email && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Mail size={16} /> {employee.email}
+                </div>
+              )}
+              {employee.user_id && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)' }}>
+                  <Shield size={16} /> Cuenta Vinculada
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={() => handleDelete(employee.id)}
+              style={{ 
+                position: 'absolute', top: '1rem', right: '1rem',
+                background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', opacity: 0.7
+              }}
+            >
+              <Trash2 size={18} />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {isModalOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '500px' }}>
+            <h3 style={{ marginBottom: '1.5rem' }}>Registrar Empleado</h3>
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label className="label">Nombre Completo</label>
                 <input
-                  type="checkbox"
-                  checked={formData.active}
-                  onChange={e => setFormData({ ...formData, active: e.target.checked })}
-                  style={{ width: '1.25rem', height: '1.25rem' }}
+                  type="text"
+                  className="input"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
-                Empleado Activo
-              </label>
-            </div>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(false)}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn-primary">
-                Guardar
-              </button>
-            </div>
-          </form>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label className="label">Cargo</label>
+                  <select
+                    className="input"
+                    value={formData.position}
+                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                  >
+                    <option value="Lavador">Lavador</option>
+                    <option value="Cajero">Cajero</option>
+                    <option value="Gerente">Gerente</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Teléfono</label>
+                  <input
+                    type="tel"
+                    className="input"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label className="label">Email (Contacto)</label>
+                <input
+                  type="email"
+                  className="input"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: 'rgba(99, 102, 241, 0.1)', borderRadius: '8px', border: '1px solid var(--primary)' }}>
+                <label className="label" style={{ color: 'var(--primary)' }}>Vincular Usuario (Importante)</label>
+                <p style={{ fontSize: '0.8rem', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>
+                  Crea el usuario en Supabase (Authentication), copia su "User UID" y pégalo aquí.
+                </p>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="Ej: a1b2c3d4-..."
+                  value={formData.user_id}
+                  onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
+                  style={{ fontFamily: 'monospace' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                <button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Guardar Empleado
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
-
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Estado</th>
-                <th style={{ textAlign: 'right' }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.length === 0 ? (
-                <tr>
-                  <td colSpan="3" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    No hay empleados registrados.
-                  </td>
-                </tr>
-              ) : (
-                employees.map(employee => (
-                  <tr key={employee.id}>
-                    <td style={{ fontWeight: 500 }}>{employee.name}</td>
-                    <td>
-                      <span className={`badge ${employee.active ? 'badge-success' : 'badge-danger'}`}>
-                        {employee.active ? (
-                          <><UserCheck size={14} /> Activo</>
-                        ) : (
-                          <><UserX size={14} /> Inactivo</>
-                        )}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem' }} onClick={() => handleEdit(employee)}>
-                          <Edit2 size={16} />
-                        </button>
-                        <button className="btn btn-danger" style={{ padding: '0.25rem 0.5rem' }} onClick={() => handleDelete(employee.id)}>
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 };
