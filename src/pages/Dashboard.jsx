@@ -99,7 +99,7 @@ const Dashboard = () => {
         date: transactionDate.toISOString(), // <--- USAMOS LA NUEVA FECHA
         customer_id: formData.customerId,
         service_id: formData.serviceId,
-        employee_id: formData.employeeId,
+        employee_id: myUserId,
         price: basePrice,
         commission_amount: parseFloat(formData.commissionAmount),
         tip_amount: tip,
