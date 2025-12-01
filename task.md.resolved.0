@@ -1,0 +1,17 @@
+# Tareas del Proyecto: Carwash Customer Inventory
+
+- [ ] Planificación y Diseño <!-- id: 0 -->
+    - [ ] Definir requerimientos y stack tecnológico <!-- id: 1 -->
+    - [ ] Crear plan de implementación <!-- id: 2 -->
+- [ ] Configuración del Proyecto <!-- id: 3 -->
+    - [ ] Inicializar proyecto con Vite (React) <!-- id: 4 -->
+    - [ ] Configurar estructura de carpetas <!-- id: 5 -->
+    - [ ] Configurar estilos base (Vanilla CSS premium) <!-- id: 6 -->
+- [ ] Implementación de Funcionalidades <!-- id: 7 -->
+    - [ ] Crear modelo de datos (Clientes, Vehículos) <!-- id: 8 -->
+    - [ ] Implementar gestión de estado (Context/Hooks) <!-- id: 9 -->
+    - [ ] Crear componentes UI (Formularios, Listas, Tarjetas) <!-- id: 10 -->
+    - [ ] Implementar vistas (Dashboard, Registro, Detalles) <!-- id: 11 -->
+- [ ] Verificación y Pulido <!-- id: 12 -->
+    - [ ] Pruebas manuales de flujo de usuario <!-- id: 13 -->
+    - [ ] Ajustes visuales y de experiencia de usuario (UX) <!-- id: 14 -->
