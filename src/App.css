@@ -39,4 +39,70 @@
 
 .read-the-docs {
   color: #888;
+  }
+/* Estilos para el botón móvil (oculto en escritorio) */
+.mobile-toggle-btn {
+  display: none;
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  background: var(--bg-card, #1e293b); /* Usa tu color de fondo o uno oscuro */
+  border: 1px solid rgba(255,255,255,0.1);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Overlay para móvil */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 90;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.sidebar-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Media Query para Móviles */
+@media (max-width: 768px) {
+  .mobile-toggle-btn {
+    display: flex; /* Mostrar botón en móvil */
+  }
+
+  .sidebar-overlay.visible {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 100;
+    transform: translateX(-100%); /* Oculto por defecto */
+    transition: transform 0.3s ease-in-out;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  }
+
+  .sidebar.open {
+    transform: translateX(0); /* Mostrar al abrir */
+  }
+
+  .main-content {
+    padding-top: 4rem; /* Espacio para el botón */
+    margin-left: 0 !important; /* Quitar margen izquierdo si lo tenías */
+    width: 100%;
+  }
 }
