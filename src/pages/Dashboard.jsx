@@ -18,9 +18,10 @@ const Dashboard = () => {
     price: '',
     commissionAmount: '',
     tipAmount: '',
-    paymentMethod: 'cash', // Default to cash
-    extras: [] // Array of { description, price }
-  });
+    paymentMethod: 'cash',
+    serviceTime: new Date().toTimeString().slice(0, 5), // <--- AGREGAR ESTO (Hora actual por defecto)
+    extras: [] 
+});
 
   // State for a new extra item being added
   const [newExtra, setNewExtra] = useState({ description: '', price: '' });
