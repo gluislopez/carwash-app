@@ -5,7 +5,23 @@ import { Plus, Car, Trash2 } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 
 const Dashboard = () => {
-  const { data: services } = useSupabase('services');
+  // --- PEGAR ESTO AQUÍ ---
+  const [myUserId, setMyUserId] = useState(null);
+
+  useEffect(() => {
+    // Pedir a Supabase quién es el usuario actual
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setMyUserId(user.id);
+        console.log("Usuario detectado:", user.id);
+      }
+    };
+    getUser();
+  }, []);
+  // -----------------------
+
+  // ... aquí sigue el resto de tu código (const { data: services } = ...)  const { data: services } = useSupabase('services');
   const { data: employees } = useSupabase('employees');
   const { data: customers } = useSupabase('customers');
   const { data: transactions, create: createTransaction } = useSupabase('transactions');
