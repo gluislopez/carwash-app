@@ -1,190 +1,101 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, Car } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Edit, Phone, Mail, Car } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
+import { supabase } from '../supabase';
 
 const Customers = () => {
-  const { data: customers, loading, create, update, remove } = useSupabase('customers');
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentCustomer, setCurrentCustomer] = useState(null);
+  const { data: customers, create, remove, update } = useSupabase('customers');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [userRole, setUserRole] = useState(null);
+  const [editingCustomer, setEditingCustomer] = useState(null);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    vehiclePlate: '',
-    vehicleModel: ''
-  });
+  useEffect(() => {
+    const getUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: employee } = await supabase.from('employees').select('role').eq('user_id', user.id).single();
+        if (employee) setUserRole(employee.role);
+      }
+    };
+    getUserRole();
+  }, []);
 
-  const handleAddNew = () => {
-    setFormData({ name: '', phone: '', vehiclePlate: '', vehicleModel: '' });
-    setCurrentCustomer(null);
-    setIsEditing(true);
-  };
+  const [formData, setFormData] = useState({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '' });
 
-  const handleEdit = (customer) => {
-    setFormData({
-      name: customer.name,
-      phone: customer.phone,
-      vehiclePlate: customer.vehicle_plate,
-      vehicleModel: customer.vehicle_model
-    });
-    setCurrentCustomer(customer);
-    setIsEditing(true);
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de eliminar este cliente?')) {
-      await remove(id);
+  const openModal = (customer = null) => {
+    if (customer) {
+      setEditingCustomer(customer);
+      setFormData({ name: customer.name, phone: customer.phone || '', email: customer.email || '', vehicle_plate: customer.vehicle_plate || '', vehicle_model: customer.vehicle_model || '' });
+    } else {
+      setEditingCustomer(null);
+      setFormData({ name: '', phone: '', email: '', vehicle_plate: '', vehicle_model: '' });
     }
+    setIsModalOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const customerData = {
-      name: formData.name,
-      phone: formData.phone,
-      vehicle_plate: formData.vehiclePlate,
-      vehicle_model: formData.vehicleModel
-    };
-
     try {
-      if (currentCustomer) {
-        await update(currentCustomer.id, customerData);
-      } else {
-        await create(customerData);
-      }
-      setIsEditing(false);
-    } catch (error) {
-      alert('Error al guardar: ' + error.message);
-    }
+      if (editingCustomer) await update(editingCustomer.id, formData);
+      else await create(formData);
+      setIsModalOpen(false);
+    } catch (error) { alert('Error al guardar cliente: ' + error.message); }
   };
 
-  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Cargando clientes...</div>;
+  const handleDelete = async (id) => {
+    if (window.confirm('¿Estás seguro de eliminar este cliente?')) { await remove(id); }
+  };
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Clientes</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Directorio de clientes y vehículos.</p>
-        </div>
-        <button className="btn btn-primary" onClick={handleAddNew}>
-          <Plus size={20} />
-          Nuevo Cliente
-        </button>
+        <div><h1 style={{ fontSize: '1.875rem', marginBottom: '0.5rem' }}>Clientes</h1><p style={{ color: 'var(--text-muted)' }}>Directorio de clientes y vehículos</p></div>
+        {userRole === 'admin' && (<button className="btn btn-primary" onClick={() => openModal()}><Plus size={20} /> Nuevo Cliente</button>)}
       </div>
 
-      {isEditing && (
-        <div className="card" style={{ marginBottom: '2rem', maxWidth: '600px' }}>
-          <h3 style={{ marginBottom: '1.5rem' }}>{currentCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '1rem' }}>
-              <label className="label">Nombre del Cliente</label>
-              <input
-                type="text"
-                className="input"
-                required
-                value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Ej. María González"
-              />
-            </div>
-            <div style={{ marginBottom: '1rem' }}>
-              <label className="label">Teléfono</label>
-              <input
-                type="tel"
-                className="input"
-                value={formData.phone}
-                onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="Ej. 555-1234"
-              />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div>
-                <label className="label">Placa / Matrícula</label>
-                <input
-                  type="text"
-                  className="input"
-                  required
-                  value={formData.vehiclePlate}
-                  onChange={e => setFormData({ ...formData, vehiclePlate: e.target.value })}
-                  placeholder="ABC-123"
-                  style={{ textTransform: 'uppercase' }}
-                />
-              </div>
-              <div>
-                <label className="label">Modelo del Auto</label>
-                <input
-                  type="text"
-                  className="input"
-                  value={formData.vehicleModel}
-                  onChange={e => setFormData({ ...formData, vehicleModel: e.target.value })}
-                  placeholder="Ej. Toyota Corolla"
-                />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-              <button type="button" className="btn btn-secondary" onClick={() => setIsEditing(false)}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn-primary">
-                Guardar
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Teléfono</th>
-                <th>Vehículo</th>
-                <th style={{ textAlign: 'right' }}>Acciones</th>
-              </tr>
-            </thead>
+      <div className="card">
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}><th style={{ padding: '1rem' }}>Nombre</th><th style={{ padding: '1rem' }}>Contacto</th><th style={{ padding: '1rem' }}>Vehículo</th>{userRole === 'admin' && <th style={{ padding: '1rem', textAlign: 'right' }}>Acciones</th>}</tr></thead>
             <tbody>
-              {customers.length === 0 ? (
-                <tr>
-                  <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    No hay clientes registrados.
-                  </td>
+              {customers.map((customer) => (
+                <tr key={customer.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '1rem', fontWeight: 'bold' }}>{customer.name}</td>
+                  <td style={{ padding: '1rem' }}><div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.9rem' }}>{customer.phone && <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Phone size={14} /> {customer.phone}</span>}{customer.email && <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}><Mail size={14} /> {customer.email}</span>}</div></td>
+                  <td style={{ padding: '1rem' }}><div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Car size={16} className="text-primary" /><span>{customer.vehicle_model}</span><span style={{ backgroundColor: 'var(--bg-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>{customer.vehicle_plate}</span></div></td>
+                  {userRole === 'admin' && (<td style={{ padding: '1rem', textAlign: 'right' }}><button onClick={() => openModal(customer)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', marginRight: '1rem' }}><Edit size={18} /></button><button onClick={() => handleDelete(customer.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}><Trash2 size={18} /></button></td>)}
                 </tr>
-              ) : (
-                customers.map(customer => (
-                  <tr key={customer.id}>
-                    <td style={{ fontWeight: 500 }}>{customer.name}</td>
-                    <td>{customer.phone || '-'}</td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Car size={16} className="text-muted" />
-                        <span>{customer.vehicle_plate}</span>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                          {customer.vehicle_model ? `(${customer.vehicle_model})` : ''}
-                        </span>
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem' }} onClick={() => handleEdit(customer)}>
-                          <Edit2 size={16} />
-                        </button>
-                        <button className="btn btn-danger" style={{ padding: '0.25rem 0.5rem' }} onClick={() => handleDelete(customer.id)}>
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
+              {customers.length === 0 && (<tr><td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No hay clientes registrados.</td></tr>)}
             </tbody>
           </table>
         </div>
       </div>
+
+      {isModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+          <div className="card" style={{ width: '100%', maxWidth: '500px' }}>
+            <h3 style={{ marginBottom: '1.5rem' }}>{editingCustomer ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: '1rem' }}><label className="label">Nombre Completo</label><input type="text" className="input" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} /></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div><label className="label">Teléfono</label><input type="tel" className="input" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} /></div>
+                <div><label className="label">Email</label><input type="email" className="input" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div><label className="label">Modelo Vehículo</label><input type="text" className="input" placeholder="Ej. Toyota Corolla" value={formData.vehicle_model} onChange={(e) => setFormData({ ...formData, vehicle_model: e.target.value })} /></div>
+                <div><label className="label">Tablilla (Placa)</label><input type="text" className="input" placeholder="ABC-123" value={formData.vehicle_plate} onChange={(e) => setFormData({ ...formData, vehicle_plate: e.target.value })} /></div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}><button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>Cancelar</button><button type="submit" className="btn btn-primary">{editingCustomer ? 'Actualizar' : 'Guardar'}</button></div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
+};
+
+export default Customers;
 };
 
 export default Customers;
