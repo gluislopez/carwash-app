@@ -4,30 +4,23 @@ import { Plus, Car, Trash2 } from 'lucide-react';
 import useSupabase from '../hooks/useSupabase';
 
 const Dashboard = () => {
-  // --- PEGAR ESTO AQUÍ ---
   const [myUserId, setMyUserId] = useState(null);
 
   useEffect(() => {
-    // Pedir a Supabase quién es el usuario actual
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setMyUserId(user.id);
-        console.log("Usuario detectado:", user.id);
-      }
+      if (user) setMyUserId(user.id);
     };
     getUser();
   }, []);
-  // -----------------------
 
-  
-  // ... aquí sigue el resto de tu código (const { data: services } = ...)  const { data: services } = useSupabase('services');
+  const { data: services } = useSupabase('services');
   const { data: employees } = useSupabase('employees');
   const { data: customers } = useSupabase('customers');
   const { data: transactions, create: createTransaction } = useSupabase('transactions');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   // Transaction Form State
   const [formData, setFormData] = useState({
     customerId: '',
@@ -37,9 +30,9 @@ const Dashboard = () => {
     commissionAmount: '',
     tipAmount: '',
     paymentMethod: 'cash',
-    serviceTime: new Date().toTimeString().slice(0, 5), // <--- AGREGAR ESTO (Hora actual por defecto)
-    extras: [] 
-});
+    serviceTime: new Date().toTimeString().slice(0, 5), // Hora actual
+    extras: []
+  });
 
   // State for a new extra item being added
   const [newExtra, setNewExtra] = useState({ description: '', price: '' });
@@ -47,7 +40,7 @@ const Dashboard = () => {
   // Derived state for today's stats
   const today = new Date().toISOString().split('T')[0];
   const todaysTransactions = transactions.filter(t => t.date && t.date.startsWith(today));
-  
+
   const totalIncome = todaysTransactions.reduce((sum, t) => sum + (parseFloat(t.total_price) || 0), 0);
   const totalCommissions = todaysTransactions.reduce((sum, t) => sum + (parseFloat(t.commission_amount) || 0) + (parseFloat(t.tip_amount) || 0), 0);
 
@@ -84,34 +77,44 @@ const Dashboard = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const basePrice = parseFloat(formData.price) || 0;
     const extrasTotal = formData.extras.reduce((sum, extra) => sum + extra.price, 0);
     const tip = parseFloat(formData.tipAmount) || 0;
     const totalPrice = basePrice + extrasTotal + tip;
 
-        // Crear fecha combinando el día de hoy con la hora seleccionada
+    // Crear fecha combinando el día de hoy con la hora seleccionada
     const transactionDate = new Date();
     const [hours, minutes] = formData.serviceTime.split(':');
     transactionDate.setHours(hours, minutes, 0, 0);
 
     const newTransaction = {
-        date: transactionDate.toISOString(), // <--- USAMOS LA NUEVA FECHA
-        customer_id: formData.customerId,
-        service_id: formData.serviceId,
-        employee_id: myUserId,
-        price: basePrice,
-        commission_amount: parseFloat(formData.commissionAmount),
-        tip_amount: tip,
-        payment_method: formData.paymentMethod,
-        extras: formData.extras,
-        total_price: totalPrice
+      date: transactionDate.toISOString(),
+      customer_id: formData.customerId,
+      service_id: formData.serviceId,
+      employee_id: myUserId, // Usamos el ID del usuario logueado
+      price: basePrice,
+      commission_amount: parseFloat(formData.commissionAmount),
+      tip_amount: tip,
+      payment_method: formData.paymentMethod,
+      extras: formData.extras,
+      total_price: totalPrice
     };
-    
+
     try {
       await createTransaction(newTransaction);
       setIsModalOpen(false);
-      setFormData({ customerId: '', serviceId: '', employeeId: '', price: '', commissionAmount: '', tipAmount: '', paymentMethod: 'cash', extras: [] });
+      setFormData({ 
+        customerId: '', 
+        serviceId: '', 
+        employeeId: '', 
+        price: '', 
+        commissionAmount: '', 
+        tipAmount: '', 
+        paymentMethod: 'cash', 
+        serviceTime: new Date().toTimeString().slice(0, 5),
+        extras: [] 
+      });
     } catch (error) {
       alert('Error al registrar venta: ' + error.message);
     }
@@ -119,16 +122,15 @@ const Dashboard = () => {
 
   const getCustomerName = (id) => customers.find(c => c.id === id)?.name || 'Cliente Casual';
   const getServiceName = (id) => services.find(s => s.id === id)?.name || 'Servicio Desconocido';
-  const getEmployeeName = (id) => employees.find(e => e.id === id)?.name || 'Sin Asignar';
 
- const getPaymentMethodLabel = (method) => {
+  const getPaymentMethodLabel = (method) => {
     switch (method) {
-        case 'cash': return 'Efectivo';
-        case 'card': return 'Tarjeta';
-        case 'transfer': return 'AthMóvil'; // <--- CAMBIO AQUÍ
-        default: return method;
+      case 'cash': return 'Efectivo';
+      case 'card': return 'Tarjeta';
+      case 'transfer': return 'AthMóvil';
+      default: return method;
     }
-};
+  };
 
   return (
     <div>
@@ -178,36 +180,11 @@ const Dashboard = () => {
                     className="input"
                     required
                     value={formData.customerId}
-                    onChange={e => setFormData({ ...formData, customerId: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
                   >
                     <option value="">Seleccionar Cliente...</option>
                     {customers.map(c => (
                       <option key={c.id} value={c.id}>{c.name} - {c.vehicle_plate}</option>
-                    ))}
-                  </select>
-                  {/* Selector de Hora */}
-<div style={{ marginBottom: '1rem' }}>
-    <label className="label">Hora del Servicio</label>
-    <input
-        type="time"
-        className="input"
-        required
-        value={formData.serviceTime}
-        onChange={(e) => setFormData({ ...formData, serviceTime: e.target.value })}
-    />
-</div>                </div>
-                
-                <div style={{ marginBottom: '1rem' }}>
-                  <label className="label">Empleado</label>
-                  <select
-                    className="input"
-                    required
-                    value={formData.employeeId}
-                    onChange={e => setFormData({ ...formData, employeeId: e.target.value })}
-                  >
-                    <option value="">Seleccionar Empleado...</option>
-                    {employees.filter(e => e.active).map(e => (
-                      <option key={e.id} value={e.id}>{e.name}</option>
                     ))}
                   </select>
                 </div>
@@ -228,6 +205,18 @@ const Dashboard = () => {
                 </select>
               </div>
 
+              {/* Selector de Hora */}
+              <div style={{ marginBottom: '1rem' }}>
+                  <label className="label">Hora del Servicio</label>
+                  <input
+                      type="time"
+                      className="input"
+                      required
+                      value={formData.serviceTime}
+                      onChange={(e) => setFormData({ ...formData, serviceTime: e.target.value })}
+                  />
+              </div>
+
               {/* Extras Section */}
               <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '0.5rem' }}>
                 <label className="label" style={{ marginBottom: '0.5rem', display: 'block' }}>Servicios Adicionales (Extras)</label>
@@ -238,7 +227,7 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span>${extra.price.toFixed(2)}</span>
                       <button type="button" onClick={() => handleRemoveExtra(index)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                        <Trash2 size={14} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
@@ -250,7 +239,7 @@ const Dashboard = () => {
                     className="input"
                     placeholder="Descripción (ej. Aspirado)"
                     value={newExtra.description}
-                    onChange={e => setNewExtra({ ...newExtra, description: e.target.value })}
+                    onChange={(e) => setNewExtra({ ...newExtra, description: e.target.value })}
                     style={{ flex: 2 }}
                   />
                   <input
@@ -258,71 +247,41 @@ const Dashboard = () => {
                     className="input"
                     placeholder="Precio"
                     value={newExtra.price}
-                    onChange={e => setNewExtra({ ...newExtra, price: e.target.value })}
+                    onChange={(e) => setNewExtra({ ...newExtra, price: e.target.value })}
                     style={{ flex: 1 }}
                   />
-                  <button type="button" className="btn btn-secondary" onClick={handleAddExtra}>
+                  <button type="button" className="btn btn-primary" onClick={handleAddExtra}>
                     <Plus size={16} />
                   </button>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div>
-                  <label className="label">Precio Base</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="label">Propina</label>
                   <input
                     type="number"
                     className="input"
-                    readOnly
-                    value={formData.price}
-                  />
-                </div>
-                <div>
-                  <label className="label">Propina ($)</label>
-                  <input
-                    type="number"
-                    className="input"
-                    min="0"
-                    step="0.50"
-                    placeholder="0.00"
                     value={formData.tipAmount}
-                    onChange={e => setFormData({ ...formData, tipAmount: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, tipAmount: e.target.value })}
                   />
                 </div>
-              </div>
-
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label className="label">Método de Pago</label>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  {['cash', 'card', 'transfer'].map(method => (
-                    <label key={method} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value={method}
-                        checked={formData.paymentMethod === method}
-                        onChange={e => setFormData({ ...formData, paymentMethod: e.target.value })}
-                      />
-                      {getPaymentMethodLabel(method)}
-                    </label>
-                  ))}
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="label">Método de Pago</label>
+                  <select
+                    className="input"
+                    value={formData.paymentMethod}
+                    onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                  >
+                    <option value="cash">Efectivo</option>
+                    <option value="card">Tarjeta</option>
+                    <option value="transfer">AthMóvil</option>
+                  </select>
                 </div>
               </div>
 
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label className="label">Total a Cobrar</label>
-                <div className="input" style={{ backgroundColor: 'var(--bg-secondary)', fontWeight: 'bold', fontSize: '1.25rem', textAlign: 'center' }}>
-                  $
-                  {(
-                    (parseFloat(formData.price) || 0) + 
-                    formData.extras.reduce((sum, e) => sum + e.price, 0) + 
-                    (parseFloat(formData.tipAmount) || 0)
-                  ).toFixed(2)}
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
+              <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                <button type="button" className="btn" onClick={() => setIsModalOpen(false)} style={{ backgroundColor: 'var(--bg-secondary)', color: 'white' }}>
                   Cancelar
                 </button>
                 <button type="submit" className="btn btn-primary">
@@ -334,53 +293,49 @@ const Dashboard = () => {
         </div>
       )}
 
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)' }}>
-          <h3 style={{ fontSize: '1.1rem' }}>Actividad Reciente</h3>
-        </div>
-        <div className="table-container">
-          <table>
+      {/* Transactions List */}
+      <div className="card">
+        <h3 className="label" style={{ marginBottom: '1rem' }}>Historial de Hoy</h3>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr>
-                <th>Hora</th>
-                <th>Cliente</th>
-                <th>Servicio</th>
-                <th>Empleado</th>
-                <th>Pago</th>
-                <th>Total</th>
+              <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
+                <th style={{ padding: '1rem' }}>Hora</th>
+                <th style={{ padding: '1rem' }}>Cliente</th>
+                <th style={{ padding: '1rem' }}>Servicio</th>
+                <th style={{ padding: '1rem' }}>Total</th>
+                <th style={{ padding: '1rem' }}>Pago</th>
               </tr>
             </thead>
             <tbody>
-              {todaysTransactions.length === 0 ? (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    No hay servicios registrados hoy.
+              {todaysTransactions.map(t => (
+                <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '1rem' }}>{new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                  <td style={{ padding: '1rem' }}>{getCustomerName(t.customer_id)}</td>
+                  <td style={{ padding: '1rem' }}>
+                    {getServiceName(t.service_id)}
+                    {t.extras && t.extras.length > 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>+ {t.extras.length} extras</span>}
+                  </td>
+                  <td style={{ padding: '1rem', fontWeight: 'bold' }}>${t.total_price}</td>
+                  <td style={{ padding: '1rem' }}>
+                    <span style={{ 
+                      padding: '0.25rem 0.75rem', 
+                      borderRadius: '1rem', 
+                      fontSize: '0.875rem',
+                      backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                      color: 'var(--primary)'
+                    }}>
+                      {getPaymentMethodLabel(t.payment_method)}
+                    </span>
                   </td>
                 </tr>
-              ) : (
-                todaysTransactions.map(t => (
-                  <tr key={t.id}>
-                    <td style={{ color: 'var(--text-muted)' }}>
-                      {new Date(t.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td style={{ fontWeight: 500 }}>{getCustomerName(t.customer_id)}</td>
-                    <td>
-                      {getServiceName(t.service_id)}
-                      {t.extras && t.extras.length > 0 && (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
-                          + {t.extras.length} extras
-                        </span>
-                      )}
-                    </td>
-                    <td>{getEmployeeName(t.employee_id)}</td>
-                    <td>
-                      <span className="badge" style={{ textTransform: 'capitalize' }}>
-                        {getPaymentMethodLabel(t.payment_method || 'cash')}
-                      </span>
-                    </td>
-                    <td style={{ fontWeight: 'bold' }}>${(t.total_price || 0).toFixed(2)}</td>
-                  </tr>
-                ))
+              ))}
+              {todaysTransactions.length === 0 && (
+                <tr>
+                  <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    No hay ventas registradas hoy
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
